@@ -1,0 +1,34 @@
+import requests
+from bs4 import BeautifulSoup
+
+
+def get_cashback(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    cashback = soup.find('div', class_='cashback-info').text.strip()
+    return cashback
+
+
+def scrape_cashback_data(url, output_file):
+    with open(output_file, 'w', encoding='utf-8') as file:
+        page_num = 1
+        while True:
+            page_url = f"{url}?page={page_num}"
+            response = requests.get(page_url)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            campaigns = soup.find_all('div', class_='shop-item')
+            if not campaigns:
+                break
+            for campaign in campaigns:
+                campaign_name = campaign.find('div', class_='shop-title').text.strip()
+                campaign_url = campaign.find('a')['href']
+                cashback = get_cashback(campaign_url)
+                file.write(f"{campaign_name}: {cashback}\n")
+            page_num += 1
+
+
+if __name__ == "__main__":
+    site_url = 'https://cash-backer.club/shops'
+    output_file = 'cashback_data.txt'
+    scrape_cashback_data(site_url, output_file)
+    print("Дані зібрано та записано до файлу cashback_data.txt")
